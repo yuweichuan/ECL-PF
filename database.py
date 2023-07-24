@@ -35,7 +35,7 @@ std_aa_mass = {
     'Y': 163.06333,
     'W': 186.07931,
     'O': 237.14773,
-}
+}  # mono amino acid mass
 expasy_rules = {
     'arg-c': r'R',
     'asp-n': r'\w(?=D)',
@@ -76,7 +76,7 @@ expasy_rules = {
                 r'((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
     'trypsin': r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))',
     'trypsin_exception': r'((?<=[CD])K(?=D))|((?<=C)K(?=[HY]))|((?<=C)R(?=K))|((?<=R)R(?=[HR]))',
-}
+}  # digestion rule
 _nterm_mod = r'[^-]+-$'
 _cterm_mod = r'-[^-]+$'
 std_nterm = 'H-'
@@ -84,8 +84,12 @@ std_cterm = '-OH'
 
 
 def mass_calculation(sequence, aa_mass):
-    """calculate the mono-isotopic mass given the specific peptide"""
-    gen = [a for a in range(len(sequence)) if str.isupper(sequence[a])]
+    """
+    Calculate the mono-isotopic mass given the specific peptide
+    :param sequence:
+    :param aa_mass:
+    """
+    gen = [a for a in range(len(sequence)) if str.isupper(sequence[a])]  # backbone amino acids
     if sequence[0:gen[0] + 1] not in aa_mass:  # mass of water and the first amino acid
         _mass = 18.01055 + aa_mass[sequence[0:gen[0]]] + aa_mass[sequence[gen[0]]]
     else:
@@ -99,9 +103,16 @@ def mass_calculation(sequence, aa_mass):
 
 
 def cleave(sequence, rule, missed_cleavages=0, min_length=1, Methionine_drop=True):
-    """cleave the protein into peptides and specify their relative positions"""
-    rule = expasy_rules.get(rule, rule)
-    peptides = []
+    """
+    Cleave the protein into peptides and specify their relative positions
+    :param sequence:
+    :param rule:
+    :param missed_cleavages:
+    :param min_length:
+    :param Methionine_drop:
+    """
+    rule = expasy_rules.get(rule, rule)  # digestion rule
+    peptides = []  # peptides list for the specific protein
     ml = missed_cleavages + 2
     trange = range(ml)
     cleavage_sites = deque([0], maxlen=ml)
@@ -115,7 +126,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=1, Methionine_drop=Tru
             seq = sequence[cleavage_sites[jj]:cleavage_sites[-1]]
             if seq and len(seq) >= min_length:
                 peptides.append((seq, cleavage_sites[jj]))  # peptide sequence and position (index from 0)
-    if Methionine_drop:
+    if Methionine_drop:  # consider the M drop at the first letter in the protein sequence
         '''add methionine dropped peptides'''
         meth_group = [ele[1:] for ele, index in peptides if (ele[0] == 'M' and index == 0 and len(ele) > min_length)]
         for _ele in meth_group:
@@ -124,10 +135,18 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=1, Methionine_drop=Tru
 
 
 def is_term_mod(label):
+    """
+    Check the terminal modification
+    :param label:
+    """
     return (re.match(_nterm_mod, label) or re.match(_cterm_mod, label)) is not None
 
 
 def pep_parse(sequence):
+    """
+    peptide parse
+    :param sequence:
+    """
     sequence = str(sequence)
     if len(sequence) >= 2:
         return [(std_nterm, sequence[0])] + [tuple(ele) for ele in sequence[1:-1]] + [(sequence[-1], std_cterm)]
@@ -138,12 +157,15 @@ def pep_parse(sequence):
 
 
 def tostring(parsed_sequence):
-    """return sequence and dict of additional num of PTMs"""
+    """
+    Return sequence and dictionary of additional num of PTMs
+    :param parsed_sequence:
+    """
     parsed_sequence = list(parsed_sequence)
-    labels = []
+    labels = []  # ptm labels
     nterm = parsed_sequence[0]
     cterm = parsed_sequence[-1]
-    ptmNum = dict()
+    ptmNum = dict()  # ptm numbers
 
     for ele in (m for m in parsed_sequence[1:-1] if len(m) > 1):
         ptmNum[ele[0][1: -1]] = ptmNum.setdefault(ele[0][1: -1], 0) + 1
@@ -159,6 +181,8 @@ def isoforms(sequence, **kwargs):
     out : iterator over strings or lists
         All possible unique polypeptide sequences resulting from
         the specified modifications are yielded one by one.
+    :param sequence:
+    :param kwargs:
     """
 
     def main(_group):  # index of the residue (capital letter) in `group`
@@ -208,14 +232,14 @@ def isoforms(sequence, **kwargs):
     parsed = pep_parse('#' + sequence + '#')  # append the sequence
     max_mods = kwargs.get('max_mods')
 
-    # Apply fixed modifications
+    '''Apply fixed modifications'''
     for cmod in fixed_mods:
         for ii, group in enumerate(parsed):
             if main(group)[1] in fixed_mods[cmod]:
                 parsed[ii] = apply_mod(group, cmod)
 
-    # Create a list of possible states for each group
-    # Start with N-terminal mods and regular mods on the N-terminal residue
+    '''Create a list of possible states for each group, 
+    Start with N-terminal mods and regular mods on the N-terminal residue'''
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
                  if (r is True or
                      main(parsed[0])[1] in r or
@@ -228,14 +252,14 @@ def isoforms(sequence, **kwargs):
                       if (mod.endswith('-') or (mod.startswith('-') and len(parsed) == 1))
                       and (res is True or main(group)[1] in res)), second)
     states = [[parsed[0]] + list(set(first).difference({parsed[0]}))]
-    # Continue with regular mods
+    '''Continue with regular mods'''
     states.extend([group] + list(set(apply_mod(group, mod)
                                      for mod in variable_mods if (
                                              variable_mods[mod] is True or
                                              group[-1] in variable_mods[mod]) and not is_term_mod(mod)
                                      ).difference({group}))
                   for group in parsed[1:-1])
-    # Finally add C-terminal mods and regular mods on the C-terminal residue
+    '''Finally add C-terminal mods and regular mods on the C-terminal residue'''
     if len(parsed) > 1:
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
                      if (r is True or
@@ -304,21 +328,24 @@ def isoforms(sequence, **kwargs):
 
 
 def database_generate(tuple_bag, interval_dalton=100, maxda=6000):
-    """primary amine, peptide n/c and protein n/c needed"""
+    """
+    Generate the peptide database given the inputs.
+    Primary amine, peptide n/c and protein n/c are considered
+    :param tuple_bag:
+    :param interval_dalton:
+    :param maxda:
+    """
     fas_list, parse_rule, num_max_mod, max_length, min_length, miss_cleavage,\
-        link_site, var_mod, fix_mod, aa_mass, num, div = tuple_bag
-    db_peptides = {}
-    number = int(num) * div
+        link_site, var_mod, fix_mod, aa_mass, num, div = tuple_bag  # import parameters
+    db_peptides = {}  # peptide database
+    number = int(num) * div  # separate peptides into groups by their masses
     for description, sequence in fas_list:
         number += 1
         proteinLength = len(sequence)
 
-        if all(word not in ['B', 'J', 'X', 'Z', 'O', 'U'] for word in sequence):
-            # form_description = description.split(' ')[0]
+        if all(word not in ['B', 'J', 'X', 'Z', 'O', 'U'] for word in sequence):  # remove less frequent amino acids
             form_description = number
             new_peptides = cleave(sequence, parse_rule, missed_cleavages=miss_cleavage, min_length=min_length)
-
-            # new_peptides = set([ele[0] for ele in new_peptides])  # temporarily
             new_peptides = (new_peptide for new_peptide in new_peptides
                             if len(new_peptide[0]) <= max_length and
                             (not set(new_peptide[0][0:-1]).isdisjoint(link_site) or new_peptide[1] <= 1))
@@ -333,22 +360,14 @@ def database_generate(tuple_bag, interval_dalton=100, maxda=6000):
                 else:
                     proteinC = False
                 forms = isoforms(element, variable_mods=var_mod, fixed_mods=fix_mod, max_mods=num_max_mod,
-                                 ProteinN=proteinN, ProteinC=proteinC)
-                # forms is a generator
+                                 ProteinN=proteinN, ProteinC=proteinC)  # forms is a generator
                 baseMass = mass_calculation(element, aa_mass=aa_mass)
 
                 for form, ptmDict in forms:
-                    form_mass = round(baseMass + sum([aa_mass[ii] * jj for ii, jj in ptmDict.items()]), 3)
-                    # precision 3 decimal is enough!!!
-
-                    # if link_site in (form)[0:-1] and len(parser.parse(form)[-1]) == 1 and form_mass < maxda:
-                    # include the n-term site, modified site cannot link and last site cannot mod
-
-                    # if link_site in parser.parse(form)[0:-1] and form_mass < maxda:
-                    # include the n-term site, modified site cannot link
+                    form_mass = round(baseMass + sum([aa_mass[ii] * jj for ii, jj in ptmDict.items()]), 3)  # 3 decimal is enough!!!
 
                     if form_mass < maxda:
-                        # include the n-term site and c-term site and primary amine by default
+                        '''include the n-term site and c-term site and primary amine by default'''
                         form = '[' + form if proteinN else form
                         form = form + ']' if proteinC else form
                         if form_mass not in db_peptides.keys():
@@ -356,16 +375,14 @@ def database_generate(tuple_bag, interval_dalton=100, maxda=6000):
                         else:
                             db_peptides[form_mass].append((form, form_description))
 
-    # with open('database_file/database_{}'.format(num), 'wb') as pickout:
-    #     pickle.dump(db_peptides, pickout)
+    '''Save out the peptide database'''
     for Da in range(0, maxda, interval_dalton):
-        sub_db_keys = np.around(np.arange(Da - 0.2, Da + interval_dalton + 0.2, 0.001), 3)
-        # 0.2 Da leeway in case of extreme mass
+        sub_db_keys = np.around(np.arange(Da - 0.2, Da + interval_dalton + 0.2, 0.001), 3)  # 0.2 Da leeway in case of extreme mass
         sub_db = {key: db_peptides[key] for key in db_peptides.keys() & sub_db_keys}
 
         with open(r'database_file/database_{}_{}_Da'.format(num, Da), 'wb') as pickout:
             pickle.dump(sub_db, pickout)
-    '''write log'''
+    '''Write log'''
     LOG_FORMAT = "%(asctime)s=====%(levelname)s++++++%(message)s"
     logging.basicConfig(filename="database.log", level=logging.INFO, format=LOG_FORMAT)
     logging.info("Finished the {} th batch data parsing.".format(num))
@@ -373,10 +390,13 @@ def database_generate(tuple_bag, interval_dalton=100, maxda=6000):
 
 
 def merge_fasta():
-    """merge the same mass interval database together and provide a mass index set
-    returns: [set(mass1,mass2,...), dict(mass1:[(form,des),(form,des),...], mass2:[(form,des),(form,des),..])]"""
+    """
+    Merge the same mass interval database together and provide a mass index set
+    returns: [set(mass1,mass2,...), dict(mass1:[(form,des),(form,des),...],
+    mass2:[(form,des),(form,des),..])]
+    """
     os.chdir('database_file')
-    files = os.listdir()
+    files = os.listdir()  # cd to database directory
     file_key = {name.split('_')[-2] for name in files}
     for k in file_key:
         file = [name for name in files if name.split('_')[-2] == k]
@@ -412,7 +432,7 @@ def merge_fasta():
 
 
 if __name__ == '__main__':
-    '''import configuration'''
+    '''Import configuration'''
     with open('ECLPF_conf', 'r') as conf_file:
         conf = json.load(conf_file)
     Parse_rule = conf['parse_rule']
@@ -433,8 +453,9 @@ if __name__ == '__main__':
     else:
         os.mkdir('database_file')
 
-    starttime = datetime.datetime.now()
-    '''add modification masses into the dict'''
+    starttime = datetime.datetime.now()  # time count
+
+    '''add modification masses into the dictionary'''
     new_mass = {}
     for i, j in Fix_mod.items():
         new_mass[i] = j[0]
@@ -442,13 +463,13 @@ if __name__ == '__main__':
     for i, j in Var_mod.items():
         new_mass[i] = j[0]
 
-    AA_mass = std_aa_mass
-    AA_mass.update(new_mass)
-    Fasta_list = list(read_fasta(decoy_generation(Fasta_path)))  # adding decoy database
-    # Fasta_list = list(fasta.read(Fasta_path))  # without decoy database
-    '''construct the mapping of protein name and index'''
+    AA_mass = std_aa_mass  # mono amino acids
+    AA_mass.update(new_mass)  # add into modifications
+    Fasta_list = list(read_fasta(decoy_generation(Fasta_path)))  # add decoy database
+
+    '''construct the necessary parameters for protein score database'''
     protein_name = dict()
-    upperScore = 100
+    upperScore = 100  # upper limit score for each protein score
     protein_name[0] = ('PEPTIDE', upperScore - 1)
     name_index = 0
     for des, seq in Fasta_list:
@@ -462,7 +483,7 @@ if __name__ == '__main__':
     Fix_mod = {key: Fix_mod[key][1] for key in Fix_mod.keys()}
     Var_mod = {key: Var_mod[key][1] for key in Var_mod.keys()}
 
-    div_data = 500  # divide fasta by every # number
+    div_data = 500  # divide fasta by every 500 number
     section = [i for i in range(len(Fasta_list)) if i % div_data == 0]
     section_length = len(section)
     num_magnitude = len(str(section_length))

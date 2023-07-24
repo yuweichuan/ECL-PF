@@ -1,12 +1,14 @@
-from pyteomics import fasta
 import os
 
 
-def decoy_generation(path):  # by reversing the fasta
-    isExists = os.path.exists(path.split('.')[0] + '_decoy' + '.fasta')
+def decoy_generation(path):
+    """
+    Generate decoy database (fasta) by revering the target sequence
+    :param path:
+    """
+    isExists = os.path.exists(path.split('.')[0] + '_decoy' + '.fasta')  # check if the decoy already exists
     if isExists:
         os.remove(path.split('.')[0] + '_decoy' + '.fasta')
-    # fasta.write_decoy_db(path, mode='reverse', output=path.split('.')[0] + '_decoy' + '.fasta')
     _db = read_fasta(path)
     with open(path.split('.')[0] + '_decoy' + '.fasta', 'w') as target_decoy_file:
         for _des, _seq in _db:
@@ -24,7 +26,10 @@ def decoy_generation(path):  # by reversing the fasta
 
 
 def read_fasta(path):
-    """parse fasta file and yield the tuple of description and sequence"""
+    """
+    Parse fasta file and yield the tuple of description and sequence
+    :param path:
+    """
     with open(path, 'r') as fasta_file:
         first_line_flag = True
         line = fasta_file.readline()
@@ -42,12 +47,3 @@ def read_fasta(path):
                 temp_description = line[1:].strip()
             line = fasta_file.readline()
         yield temp_description, ''.join(temp_sequence_list)
-
-
-if __name__ == '__main__':
-    a = decoy_generation('BSA_test.fasta')
-
-    sp = list(read_fasta(a))
-    for i, j in sp:
-        print(i)
-        print(j)

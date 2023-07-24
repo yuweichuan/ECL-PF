@@ -1,7 +1,6 @@
 from pyteomics import mzxml
 import os
 import shutil
-import re
 import pickle
 import concurrent.futures
 import time
@@ -10,6 +9,10 @@ import json
 
 
 def separate(tuple_bag):
+    """
+    Separate the spectra by CID and ETD type. And merge the peaks within the MS tolerance
+    :param tuple_bag:
+    """
     file_name, output, activation_type, tol1, tol2, ratio = tuple_bag  # tol unit is ppm
     with mzxml.read(file_name) as spectra:
         CID = set()
@@ -112,7 +115,7 @@ def separate(tuple_bag):
                     merged_CID.append((CID_peaks[cid_idx][0], CID_peaks[cid_idx][1]))
             pair_wise.append({'mass': CID_spectra[cid]['mass'], 'CID_scan': cid, 'charge': CID_spectra[cid]['charge'],
                               'CID_peaks': merged_CID, 'ETD_peaks': None})  # sort peaks by their mass
-    with open('pickled_pair_wise/{}'.format(file_name.split('.')[0]), 'wb') as pickout:
+    with open('pickled_pair_wise/{}'.format(file_name.split('/')[-1].split('.')[0]), 'wb') as pickout:
         # truncate string
         pickle.dump(pair_wise, pickout)
     del pair_wise
@@ -126,10 +129,15 @@ if __name__ == '__main__':
     PEAK_RATIO = 0  # require peak ratio with at least proportion for CID and ETD spectra (domain [0,1])
     os.chdir('data/')
     Activation_Type = conf['activation_type']
+    for ele in conf['data_path']:
+        if ' ' in ele:
+            print('space contains')
+            quit()
+    File_name = [name.split('/')[-1] for name in conf['data_path']]
+    print(File_name)
 
-    File_name = [name for name in os.listdir() if re.search(r'\.mzXML', name)]
     Output = [r'hardklor_result/{}'.format(name.replace('mzXML', 'txt')) for name in File_name]
-
+    print(Output)
     hardklor_isExists = os.path.exists('hardklor_result')
     pairwise_isExists = os.path.exists('pickled_pair_wise')
     if pairwise_isExists:
@@ -146,25 +154,25 @@ if __name__ == '__main__':
     else:
         os.mkdir('hardklor_result')
 
+    '''Use Hardklor to de-charge and generate txt file'''
     with open('Hardklor.conf') as f:
         param = f.read()
+
     with open('parameter.conf', 'w') as f:
         f.write(param)
-        for i in range(len(File_name)):
-            f.write(f"\n{File_name[i]} {Output[i]}")
+        for i in range(len(conf['data_path'])):
+            f.write("\n{} {}".format(conf['data_path'][i].replace('\\', '/'), Output[i]))
 
     os.system("Hardklor.exe %s" % 'parameter.conf')
+
     os.remove('parameter.conf')
     args = []
+
     print('Converting results...')
-    for i in range(len(File_name)):
-        args.append((File_name[i], Output[i], Activation_Type, TOLERANCE1, TOLERANCE2, PEAK_RATIO))
+    for i in range(len(conf['data_path'])):
+        args.append((conf['data_path'][i], Output[i], Activation_Type, TOLERANCE1, TOLERANCE2, PEAK_RATIO))
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         a = executor.map(separate, args)
-    # separate((File_name[0], Output[0], Activation_Type, TOLERANCE1, TOLERANCE2, PEAK_RATIO))
+
     print('Done!')
-
-
-
-

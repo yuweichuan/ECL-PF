@@ -1,15 +1,19 @@
 import pickle
 import numpy as np
-import time
 import os
-import concurrent.futures
-import shutil
 
 
 def find_precursor_ab_mass(sorted_list, pre_mass, xl, ml, ms, tol, signum=1):
-    # sorted_list = [(mass1,intensity1),(ma2,int2),()], tol unit is ms2 ppm 2e-5
-    """return list of tuples of potential alpha and beta precursor masses,
-    output = [[beta,alpha,#markers,intensity],[],[]],  sort from higher possible ones to lower ones"""
+    """
+    Find the corresponded alpha and beta peptides mass given the spectrum by using the exhaustive cross linking search
+    :param sorted_list:
+    :param pre_mass:
+    :param xl:
+    :param ml:
+    :param ms:
+    :param tol:
+    :param signum:
+    """
     if len(sorted_list) < 2:
         return [[0, 0, -1, 0]]  # return 0 result
     delta = ml - ms
@@ -162,15 +166,18 @@ def find_precursor_ab_mass(sorted_list, pre_mass, xl, ml, ms, tol, signum=1):
     """sort by number of markers, then followed by intensity"""
     validate_res = sorted(validate_res, key=lambda x: (-x[2], -x[3]))
     """only return high possible ones if exist markers >= 3, else return everything"""
-    # if validate_res and validate_res[0][2] >= 3:
-    #     validate_res = [val_res_ele for val_res_ele in validate_res if val_res_ele[2] >= 3]
     validate_res = [val_res_ele for val_res_ele in validate_res if val_res_ele[2] >= min(signum, 4)]
     return validate_res  # [[beta,alpha,#markers,intensity],[],[]],  sort from higher possible ones to lower ones
 
 
 def extract_peptide(chain_mass, tol_da, path='database_file/'):  # mass precision in 4 decimal
-    """given a concrete mass and tolerance,
-    return possible peptides in the database [(mass,'PEPTIDE',description),( , , ),( , , )...]"""
+    """
+    given a concrete mass and tolerance,
+    return possible peptides in the database [(mass,'PEPTIDE',description),( , , ),( , , )...]
+    :param chain_mass:
+    :param tol_da:
+    :param path:
+    """
     dir_mass = os.listdir(path)
     mass_idx = [(chain_mass - int(dir_mass[i]), i) for i in range(len(dir_mass)) if chain_mass - int(dir_mass[i]) >= 0]
     with open(path + dir_mass[min(mass_idx)[1]], 'rb') as file:
@@ -185,12 +192,17 @@ def extract_peptide(chain_mass, tol_da, path='database_file/'):  # mass precisio
 
 
 def db_to_spectra_extraction(correspond_matrix, tol, path='database_file/'):
-    """from database to extract chain precursor candidates
+    """
+    From database to extract chain precursor candidates
     returns list [[[beta,alpha,#,int],[beta,alpha,#,int],[],..],
                         [[beta,alpha,#,int],[beta,alpha,#,int],[],..]
                         ...]
                         where beta = [(mass,concatenate_sequence,concatenate_des),(mass,con_seq,con_des),(),...]
-                        alpha = [(mass,concatenate_sequence,concatenate_des),(mass,con_seq,con_des),(),...]"""
+                        alpha = [(mass,concatenate_sequence,concatenate_des),(mass,con_seq,con_des),(),...]
+    :param correspond_matrix:
+    :param tol:
+    :param path:
+    """
 
     dir_mass = os.listdir(path)
     num_dir_mass = sorted([int(dir_mass_ele) for dir_mass_ele in dir_mass])
@@ -231,23 +243,3 @@ def db_to_spectra_extraction(correspond_matrix, tol, path='database_file/'):
                 key_ele[1] = []
 
     return res
-
-
-if __name__ == '__main__':
-    with open(r"F:\OneDrive - HKUST Connect\Research\ECL_X\ECLX_src\data\pickled_pair_wise\MS200295-CBDPS-HCD",'rb') as f:
-        spectra = pickle.load(f)
-    print(f'spcetra number is {len(spectra)} \n the first element is:')
-    print(spectra[0:1])
-    xl_mass = 509.0963
-    large_mass = 455.0868
-    small_mass = 54.0106
-    TOL = 2e-5
-    pre_chian_tol = 3e-5
-
-
-
-
-
-
-
-
