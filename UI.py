@@ -110,7 +110,8 @@ def stop():
         flag1 = True
         p1.kill()
         # print_en.configure(state=DISABLED)
-        stop_btn['state']=DISABLED
+        stop_btn['state'] = DISABLED
+        enable_noncleave_input()
         messagebox.showinfo('Task', 'Task terminated!')
 
 
@@ -247,6 +248,38 @@ def on_enter_mod_mass_en(e):
 '''################################################ Cleavable frame #################################################'''
 
 
+def disable_cleave_input():
+    fdr_en.configure(state=DISABLED)
+    core_en.configure(state=DISABLED)
+    higher_en.configure(state=DISABLED)
+    lower_en.configure(state=DISABLED)
+    parse_en.configure(state=DISABLED)
+    miss_en.configure(state=DISABLED)
+    ms1tol_en.configure(state=DISABLED)
+    ms2tol_en.configure(state=DISABLED)
+    cleavelinker_en.configure(state=DISABLED)
+    fixed_en.configure(state=DISABLED)
+    var_en.configure(state=DISABLED)
+    max_mod_en.configure(state=DISABLED)
+    activation_en.configure(state=DISABLED)
+
+
+def enable_cleave_input():
+    fdr_en.configure(state=NORMAL)
+    core_en.configure(state=NORMAL)
+    higher_en.configure(state=NORMAL)
+    lower_en.configure(state=NORMAL)
+    parse_en.configure(state=NORMAL)
+    miss_en.configure(state=NORMAL)
+    ms1tol_en.configure(state=NORMAL)
+    ms2tol_en.configure(state=NORMAL)
+    cleavelinker_en.configure(state=NORMAL)
+    fixed_en.configure(state=NORMAL)
+    var_en.configure(state=NORMAL)
+    max_mod_en.configure(state=NORMAL)
+    activation_en.configure(state=NORMAL)
+
+
 def stop_cleave():
     """Cleavable module: stop function"""
     global flag2
@@ -270,6 +303,7 @@ def stop_cleave():
         # print_en.configure(state=DISABLED)
         print_en.insert(END, '\n{}Task terminated!{}\n'.format('*' * 47, '*' * 47))
         stop_btn['state']=DISABLED
+        enable_cleave_input()
         messagebox.showinfo('Task', 'Task terminated!')
 
 
@@ -419,6 +453,7 @@ def sub_cleave():
 
     print_en.configure(state=DISABLED)
     stop_btn['state'] = DISABLED
+    enable_cleave_input()
     messagebox.showinfo('Task', 'Task finished!')
 
 
@@ -459,6 +494,8 @@ def run_cleave():
         if float(fdr_en.get()) <= 0:
             messagebox.showwarning('Invalid parameter settings', 'FDR is less than 0')
             return True
+        else:
+            fdr_en.configure(state=DISABLED)
     except ValueError:
         messagebox.showwarning('Invalid parameter settings', 'Invalid FDR setting')
         return True
@@ -466,7 +503,7 @@ def run_cleave():
     stop_btn['state'] = NORMAL
     print_en.configure(state=NORMAL)
     cleave_params_print()
-
+    disable_cleave_input()
     threading.Thread(target=sub_cleave).start()
 
 
@@ -1640,6 +1677,34 @@ def delete_nonlinker():
         conn.close()
 
 
+def disable_noncleave_input():
+    fdr_en.configure(state=DISABLED)
+    core_en.configure(state=DISABLED)
+    higher_en.configure(state=DISABLED)
+    lower_en.configure(state=DISABLED)
+    parse_en.configure(state=DISABLED)
+    miss_en.configure(state=DISABLED)
+    ms1tol_en.configure(state=DISABLED)
+    ms2tol_en.configure(state=DISABLED)
+    nonlinker_en.configure(state=DISABLED)
+    fixed_en.configure(state=DISABLED)
+    var_en.configure(state=DISABLED)
+
+
+def enable_noncleave_input():
+    fdr_en.configure(state=NORMAL)
+    core_en.configure(state=NORMAL)
+    higher_en.configure(state=NORMAL)
+    lower_en.configure(state=NORMAL)
+    parse_en.configure(state=NORMAL)
+    miss_en.configure(state=NORMAL)
+    ms1tol_en.configure(state=NORMAL)
+    ms2tol_en.configure(state=NORMAL)
+    nonlinker_en.configure(state=NORMAL)
+    fixed_en.configure(state=NORMAL)
+    var_en.configure(state=NORMAL)
+
+
 def non_params_print():
     """Noncleavable module: print parameters"""
     print_en.configure(state=NORMAL)
@@ -1672,7 +1737,7 @@ def non_params_print():
         for ele in var_en.get(0, END)[1:]:
             print_en.insert(END, '                    ' + ele + ' ' + str(modDict[ele][2]) + '\n')
     print_en.insert(END, 'FDR threshold :     ' + fdr_en.get() + ' %\n\n')
-    print_en.insert(END, "{}Program running{}\n\n".format('*' *47, '*' * 48))
+    print_en.insert(END, "{}Program running{}\n\n".format('*' * 47, '*' * 48))
 
 
 def sub_xolik():
@@ -1727,6 +1792,7 @@ def sub_xolik():
 
     print_en.configure(state=DISABLED)
     stop_btn['state'] = DISABLED
+    enable_noncleave_input()
     messagebox.showinfo('Task', 'Task finished!')
 
 
@@ -1767,7 +1833,7 @@ def run_xolik():
     stop_btn['state'] = NORMAL
     print_en.configure(state=NORMAL)
     non_params_print()
-
+    disable_noncleave_input()
     threading.Thread(target=sub_xolik).start()
 
 
