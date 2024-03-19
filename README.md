@@ -23,7 +23,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>>
 ```
 ### Quick start
-You can start the data analysis by running the UI.exe. The program will output the CSV file for each task.
+You can start the data analysis by running the UI.exe or typing ```python UI.py``` in the command line. The program will output the CSV file for each task.
 The input file formats and the parameter settings are listed below.
 - MS spectra
   - mzXML format is required. To ensure the correct format, users can use MSConvert (https://proteowizard.sourceforge.io/download.html) to transfer the RAW file into mzXML by choosing the <strong>peak picking</strong> and <strong>zero samples</strong> functions as well as the <strong>32-bit precision</strong> and uncheck <strong>Use zlib compression</strong>. Both MS1 and MS2 spectra need to be retained. Details of manipulation can be found in the Tutorial.pdf under the ECL-PF repo.
