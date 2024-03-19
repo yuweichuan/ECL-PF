@@ -1,5 +1,7 @@
 import sys
 import csv
+import time
+
 import numpy as np
 from pyteomics import fasta
 import os
@@ -115,9 +117,15 @@ class Record:
 if __name__ == '__main__':
     records = dict()
     csmPath = sys.argv[1]
-    check_file = os.path.exists(csmPath)
-    if not check_file:
-        quit()
+
+    nn = 0
+    while not os.path.exists(csmPath):
+        time.sleep(0.5)
+        nn += 1
+        if nn == 10:
+            print('Intermediate raw file not found')
+            quit()
+
     proteinPath = sys.argv[2]
     FDR = float(sys.argv[3])
 
@@ -365,4 +373,5 @@ if __name__ == '__main__':
                  'beta': spectrum['beta'], 'pos_b': spectrum['pos_b'], 'b1_score': spectrum['b1_score'],
                  'b_protein': b_protein, 'q_value': spectrum['q_value'],
                  'type': spectrum['type']})
+
     os.remove(csmPath)

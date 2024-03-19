@@ -254,5 +254,5 @@ if __name__ == '__main__':
                  'beta': spectrum['beta'], 'pos_b': spectrum['pos_b'], 'b1_score': spectrum['b1_score'],
                  'b_protein': b_protein, 'q_value': spectrum['q_value'],
                  'a2_score': spectrum['a2_score'], 'b2_score': spectrum['b2_score'], 'type': spectrum['type']})
+
     os.remove(path)
-    print('success')
